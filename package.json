@@ -1,0 +1,14 @@
+{
+  "name": "crowdsale-frontend",
+  "version": "1.0.0",
+  "description": "Front end to handle ico",
+  "main": "index.js",
+  "scripts": {
+    "dev" : "lite-server"
+  },
+  "author": "Maninder Singh",
+  "license": "MIT",
+  "devDependencies": {
+    "lite-server": "^2.3.0"
+  }
+}
