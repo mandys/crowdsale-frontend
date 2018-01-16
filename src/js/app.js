@@ -63,6 +63,12 @@ App = {
   getCrowdsaleAddress: function() {
     App.contracts.SampleCrowdsale.deployed().then(function(instance) {
       console.log("CROWDSALE ADDRESS IS");
+      console.log(instance);
+      instance.paused.call().then(function(response) {
+        console.log(response);
+      }).catch(function(e) {
+        console.log(e);
+      });
       console.log(instance.address);
       App.crowdsaleAddress = instance.address;
     });
@@ -98,6 +104,8 @@ App = {
   bindEvents: function() {
     $(document).on('click', '#wlAddressButton', App.handleWhitelist);
     $(document).on('click', '#transferOwnership', App.transferOwnership);
+    $(document).on('click', '#getOwnership', App.getOwnership);
+    $(document).on('click', '#unpauseTokenTransfers', App.unpauseTokenTransfers);
   },
 
   handleWhitelist: function(event) {
@@ -120,11 +128,42 @@ App = {
       App.contracts.MintableToken.deployed().then(function(instance) {
         token = instance;
         console.log(token);
-        token.transferOwnership(App.crowdsaleAddress).then(function(result) {
+        token.transferOwnership(App.crowdsaleAddress, {from: "0x8c6f185437f3cf63302e915d0031c69b57cb0a5b"}).then(function(result) {
           console.log(result);
         });
       });
   },
+  getOwnership: function(event) {
+    event.preventDefault();
+    console.log('Getting Ownership of Token Contract...');
+    var crowdsale;
+      App.contracts.MintableToken.deployed().then(function(instance) {
+        token = instance;
+        console.log(token);
+        token.owner.call({from: "0x8c6f185437f3cf63302e915d0031c69b57cb0a5b"}).then(function(result) {
+          console.log(result);
+        });
+      });
+  },  
+  unpauseTokenTransfers: function(event) {
+    event.preventDefault();
+    console.log('Unpausing token tranfers...');
+    var crowdsale;
+      App.contracts.MintableToken.deployed().then(function(instance) {
+        token = instance;
+        token.paused.call({from: "0x8c6f185437f3cf63302e915d0031c69b57cb0a5b"}).then(function(result) {
+          console.log(result);
+        }).catch(function(e) {
+          console.log(e);
+        });
+        console.log(token);
+        token.unpause({from: "0x8c6f185437f3cf63302e915d0031c69b57cb0a5b"}).then(function(result) {
+          console.log(result);
+        }).catch(function(e) {
+          console.log(e);
+        });
+      });
+  },   
 };
 
 $(function() {
