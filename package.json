@@ -4,7 +4,7 @@
   "description": "Front end to handle ico",
   "main": "index.js",
   "scripts": {
-    "dev" : "lite-server"
+    "dev": "lite-server"
   },
   "author": "Maninder Singh",
   "license": "MIT",

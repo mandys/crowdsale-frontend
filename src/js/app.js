@@ -26,7 +26,7 @@ App = {
   },
 
   initContract: function() {
-    $.getJSON('MyToken.json', function(data) {
+    $.getJSON('BinkdToken.json', function(data) {
       // Get the necessary contract artifact file and instantiate it with truffle-contract.
       var MintableTokenArtifact = data;
       App.contracts.MintableToken = TruffleContract(MintableTokenArtifact);
@@ -37,7 +37,7 @@ App = {
       // Use subcontract token to return current token balance of the user.
       return App.getTokenAddress();
     });
-    $.getJSON('MyCrowdsale.json', function(data) {
+    $.getJSON('BinkdPresale.json', function(data) {
       // Get the necessary contract artifact file and instantiate it with truffle-contract.
       var SampleCrowdsaleArtifact = data;
       App.contracts.SampleCrowdsale = TruffleContract(SampleCrowdsaleArtifact);
@@ -46,7 +46,7 @@ App = {
       App.contracts.SampleCrowdsale.setProvider(App.web3Provider);
 
       // Use subcontract token to return current token balance of the user.
-      return App.getCrowdsaleAddress(), App.getEndTime(), App.getRaisedFunds();
+      return App.getCrowdsaleAddress(), App.getStartTime(), App.getEndTime(), App.getRaisedFunds();
     });  
     console.log(App.contracts);
     return App.bindEvents();
@@ -55,7 +55,7 @@ App = {
   getTokenAddress: function() {
     App.contracts.MintableToken.deployed().then(function(instance) {
       console.log('TOKEN ADDRESS IS');
-      console.log(instance.address);
+      console.log(instance);
       App.tokenAddress = instance.address;
     });
   },
@@ -87,7 +87,19 @@ App = {
           console.log(err.message);
         });
   },
-
+  getStartTime: function(){
+    console.log('Getting starttime...');
+    App.contracts.SampleCrowdsale.deployed().then(function(instance) {
+        crowdsale = instance;
+        return crowdsale.startTime();
+    }).then(function(result){
+      startTime = new Date(result.c[0]*1000);
+      console.log(startTime);
+      $('#StartTime').text(startTime);
+      }).catch(function(err) {
+          console.log(err.message);
+        });
+  },
   getRaisedFunds: function(){
     console.log('Getting raised funds...');
     App.contracts.SampleCrowdsale.deployed().then(function(instance) {
@@ -106,6 +118,7 @@ App = {
     $(document).on('click', '#transferOwnership', App.transferOwnership);
     $(document).on('click', '#getOwnership', App.getOwnership);
     $(document).on('click', '#unpauseTokenTransfers', App.unpauseTokenTransfers);
+    $(document).on('click', '#resetInitialDates', App.resetInitialDates);
   },
 
   handleWhitelist: function(event) {
@@ -164,6 +177,21 @@ App = {
         });
       });
   },   
+  resetInitialDates: function(event) {
+    event.preventDefault();
+    console.log('Resetting Initial Dates...');
+    var crowdsale;
+      App.contracts.SampleCrowdsale.deployed().then(function(instance) {
+        crowdsale = instance;
+        var _startTime = Date.now()/1000|0 + 120;
+        var _endTime = _startTime + 604800;
+        crowdsale.setPresaleDates(_startTime, _endTime, {from: "0x8c6f185437f3cf63302e915d0031c69b57cb0a5b"}).then(function(result) {
+          console.log(result);
+        }).catch(function(e) {
+          console.log(e);
+        });
+      });
+  },  
 };
 
 $(function() {
