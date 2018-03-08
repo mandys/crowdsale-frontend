@@ -3,6 +3,7 @@ App = {
   contracts: {},
   tokenAddress: null,
   crowdsaleAddress: null,
+  ownerAddress: null,
 
   init: function() {
     return App.initWeb3();
@@ -37,7 +38,7 @@ App = {
       // Use subcontract token to return current token balance of the user.
       return App.getTokenAddress();
     });
-    $.getJSON('BinkdPresale.json', function(data) {
+    $.getJSON('BinkdPrivatesale.json', function(data) {
       // Get the necessary contract artifact file and instantiate it with truffle-contract.
       var SampleCrowdsaleArtifact = data;
       App.contracts.SampleCrowdsale = TruffleContract(SampleCrowdsaleArtifact);
@@ -70,6 +71,10 @@ App = {
         console.log(e);
       });
       console.log(instance.address);
+      instance.owner.call().then((owner) => {
+        console.log('crowdsale owner', owner)
+        App.ownerAddress = owner;
+      })
       App.crowdsaleAddress = instance.address;
     });
   },
@@ -115,10 +120,13 @@ App = {
 
   bindEvents: function() {
     $(document).on('click', '#wlAddressButton', App.handleWhitelist);
+    $(document).on('click', '#isWlAddressButton', App.handleWhitelistCheck);
     $(document).on('click', '#transferOwnership', App.transferOwnership);
     $(document).on('click', '#getOwnership', App.getOwnership);
     $(document).on('click', '#unpauseTokenTransfers', App.unpauseTokenTransfers);
     $(document).on('click', '#resetInitialDates', App.resetInitialDates);
+    $(document).on('click', '#resetCrowdsaleOwnership', App.resetCrowdsaleOwnership);
+    
   },
 
   handleWhitelist: function(event) {
@@ -131,7 +139,37 @@ App = {
         wlAddresses.push($('#wl_address').val());
         console.log('logging wlAddresses...');
         console.log(wlAddresses);
-        crowdsale.addToWhitelist(wlAddresses, {from: "0xd543e794cd0e97a066200efaf30e53ec62d4e3d9"});
+        try {
+          crowdsale.addToWhitelist(wlAddresses, {from: App.ownerAddress}).then((error, response) => {
+            if ( error ) {
+              console.log(error);
+            }
+            console.log(response);
+          });
+        } catch(e) {
+          console.log(e);
+        }
+
+      });
+  },
+  handleWhitelistCheck: function(event) {
+    event.preventDefault();
+    console.log('Checking for Whitelisting Address...');
+    var crowdsale;
+      App.contracts.SampleCrowdsale.deployed().then(function(instance) {
+        crowdsale = instance;
+        // var wlAddresses = [];
+        // wlAddresses.push($('#wl_address').val());
+        // console.log('logging wlAddresses...');
+        // console.log(wlAddresses);
+        try {
+          crowdsale.addressIsWhitelisted.call($('#is_wl_address').val()).then((response) => {
+            console.log(response)
+          });
+        } catch(e) {
+          console.log(e);
+        }
+
       });
   },
   transferOwnership: function(event) {
@@ -141,9 +179,23 @@ App = {
       App.contracts.MintableToken.deployed().then(function(instance) {
         token = instance;
         console.log(token);
-        token.transferOwnership(App.crowdsaleAddress, {from: "0x8c6f185437f3cf63302e915d0031c69b57cb0a5b"}).then(function(result) {
+        token.transferOwnership(App.crowdsaleAddress, {from: App.ownerAddress}).then(function(result) {
           console.log(result);
         });
+      });
+  },
+  resetCrowdsaleOwnership: function(event) {
+    event.preventDefault();
+    console.log('Transfering Ownership to Accounts[0]...');
+    var crowdsale;
+    App.contracts.SampleCrowdsale.deployed().then(function(instance) {
+        crowdsale = instance;
+        console.log(crowdsale);
+        crowdsale.reTransferTokenOwnership().then(function(result) {
+          console.log(result);
+        }).catch((e) => {
+          console.log(e);
+        })
       });
   },
   getOwnership: function(event) {
@@ -153,7 +205,7 @@ App = {
       App.contracts.MintableToken.deployed().then(function(instance) {
         token = instance;
         console.log(token);
-        token.owner.call({from: "0x8c6f185437f3cf63302e915d0031c69b57cb0a5b"}).then(function(result) {
+        token.owner.call().then(function(result) {
           console.log(result);
         });
       });
@@ -164,13 +216,13 @@ App = {
     var crowdsale;
       App.contracts.MintableToken.deployed().then(function(instance) {
         token = instance;
-        token.paused.call({from: "0x8c6f185437f3cf63302e915d0031c69b57cb0a5b"}).then(function(result) {
-          console.log(result);
+        token.paused.call({from: App.ownerAddress}).then(function(result) {
+          console.log('is_paused', result);
         }).catch(function(e) {
           console.log(e);
         });
         console.log(token);
-        token.unpause({from: "0x8c6f185437f3cf63302e915d0031c69b57cb0a5b"}).then(function(result) {
+        token.unpause({from: App.ownerAddress}).then(function(result) {
           console.log(result);
         }).catch(function(e) {
           console.log(e);
@@ -185,7 +237,7 @@ App = {
         crowdsale = instance;
         var _startTime = Date.now()/1000|0 + 120;
         var _endTime = _startTime + 604800;
-        crowdsale.setPresaleDates(_startTime, _endTime, {from: "0x8c6f185437f3cf63302e915d0031c69b57cb0a5b"}).then(function(result) {
+        crowdsale.setPrivateSaleDates(_startTime, _endTime, {from: App.ownerAddress}).then(function(result) {
           console.log(result);
         }).catch(function(e) {
           console.log(e);
